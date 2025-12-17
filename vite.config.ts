@@ -6,9 +6,7 @@ import url from "url";
 const dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  plugins: [
-    react(),
-  ],
+  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(dirname, "client", "src"),
@@ -18,13 +16,7 @@ export default defineConfig({
   },
   root: path.resolve(dirname, "client"),
   build: {
-    outDir: path.resolve(dirname, "dist/public"),
+    outDir: path.resolve(dirname, "dist/public"), // Ensure "dist/public" points to your assets
     emptyOutDir: true,
-  },
-  server: {
-    fs: {
-      strict: true,
-      deny: ["**/.*"],
-    },
   },
 });
