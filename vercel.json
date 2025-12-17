@@ -4,5 +4,14 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
+  ],
+  "routes": [
+    {
+      "handle": "filesystem" // Serve static assets directly if found
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html" // Fallback to index.html for client-side routing
+    }
   ]
 }
