@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Lock, Globe } from "lucide-react";
 
@@ -47,6 +48,9 @@ export function CreateRoomModal({ open, onOpenChange, onCreate }: CreateRoomModa
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Create New Room</DialogTitle>
+          <DialogDescription>
+            Create a public room for anyone to join, or a private room with password protection.
+          </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 py-4">
           <div className="flex flex-col gap-2">
