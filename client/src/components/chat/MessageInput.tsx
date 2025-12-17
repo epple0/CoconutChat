@@ -5,12 +5,15 @@ import { Send } from "lucide-react";
 
 interface MessageInputProps {
   onSend: (message: string) => void;
+  onTyping?: (isTyping: boolean) => void;
   disabled?: boolean;
 }
 
-export function MessageInput({ onSend, disabled }: MessageInputProps) {
+export function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) {
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isTypingRef = useRef(false);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -19,8 +22,39 @@ export function MessageInput({ onSend, disabled }: MessageInputProps) {
     }
   }, [message]);
 
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleTyping = () => {
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      onTyping?.(true);
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      onTyping?.(false);
+    }, 2000);
+  };
+
   const handleSend = () => {
     if (message.trim() && !disabled) {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (isTypingRef.current) {
+        isTypingRef.current = false;
+        onTyping?.(false);
+      }
       onSend(message.trim());
       setMessage("");
     }
@@ -33,12 +67,25 @@ export function MessageInput({ onSend, disabled }: MessageInputProps) {
     }
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessage(e.target.value);
+    if (e.target.value.length > 0) {
+      handleTyping();
+    } else if (isTypingRef.current) {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      isTypingRef.current = false;
+      onTyping?.(false);
+    }
+  };
+
   return (
     <div className="flex items-end gap-2 p-4 border-t">
       <Textarea
         ref={textareaRef}
         value={message}
-        onChange={(e) => setMessage(e.target.value)}
+        onChange={handleChange}
         onKeyDown={handleKeyDown}
         placeholder="Type a message..."
         className="resize-none min-h-[40px] max-h-[120px]"

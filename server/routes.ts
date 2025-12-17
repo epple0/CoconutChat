@@ -192,6 +192,19 @@ export async function registerRoutes(
       io.to(data.roomId).emit("message", message);
     });
 
+    socket.on("typing", (data: { roomId: string; isTyping: boolean }) => {
+      const currentUser = connectedUsers.get(socket.id);
+      if (!currentUser || currentUser.currentRoom !== data.roomId) {
+        return;
+      }
+
+      socket.to(data.roomId).emit("user_typing", {
+        userId: currentUser.id,
+        username: currentUser.username,
+        isTyping: data.isTyping,
+      });
+    });
+
     socket.on("disconnect", () => {
       const currentUser = connectedUsers.get(socket.id);
       if (currentUser?.currentRoom) {

@@ -11,6 +11,7 @@ import { CreateRoomModal } from "./CreateRoomModal";
 import { JoinRoomModal } from "./JoinRoomModal";
 import { WelcomeScreen } from "./WelcomeScreen";
 import { ConnectionStatus } from "./ConnectionStatus";
+import { TypingIndicator } from "./TypingIndicator";
 import { Plus, Users, MessageCircle, Menu, X } from "lucide-react";
 
 interface ChatState {
@@ -20,6 +21,7 @@ interface ChatState {
   messages: Message[];
   users: User[];
   connected: boolean;
+  typingUsers: Map<string, string>;
 }
 
 export function ChatApp() {
@@ -30,6 +32,7 @@ export function ChatApp() {
     messages: [],
     users: [],
     connected: false,
+    typingUsers: new Map(),
   });
   
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -78,6 +81,7 @@ export function ChatApp() {
         currentRoom: data.room,
         messages: data.messages.map((m) => ({ ...m, timestamp: new Date(m.timestamp) })),
         users: data.users,
+        typingUsers: new Map(),
       }));
       setJoinRoomData(null);
       setMobileView("chat");
@@ -116,9 +120,12 @@ export function ChatApp() {
     socket.on("user_left", (userId: string) => {
       setState((prev) => {
         const user = prev.users.find((u) => u.id === userId);
+        const newTypingUsers = new Map(prev.typingUsers);
+        newTypingUsers.delete(userId);
         return {
           ...prev,
           users: prev.users.filter((u) => u.id !== userId),
+          typingUsers: newTypingUsers,
           messages: user
             ? [
                 ...prev.messages,
@@ -132,6 +139,18 @@ export function ChatApp() {
               ]
             : prev.messages,
         };
+      });
+    });
+
+    socket.on("user_typing", (data: { userId: string; username: string; isTyping: boolean }) => {
+      setState((prev) => {
+        const newTypingUsers = new Map(prev.typingUsers);
+        if (data.isTyping) {
+          newTypingUsers.set(data.userId, data.username);
+        } else {
+          newTypingUsers.delete(data.userId);
+        }
+        return { ...prev, typingUsers: newTypingUsers };
       });
     });
 
@@ -165,6 +184,12 @@ export function ChatApp() {
   const handleSendMessage = (content: string) => {
     if (state.currentRoom) {
       socketRef.current?.emit("message", { roomId: state.currentRoom.id, content });
+    }
+  };
+
+  const handleTyping = (isTyping: boolean) => {
+    if (state.currentRoom) {
+      socketRef.current?.emit("typing", { roomId: state.currentRoom.id, isTyping });
     }
   };
 
@@ -343,7 +368,8 @@ export function ChatApp() {
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
-            <MessageInput onSend={handleSendMessage} disabled={!state.connected} />
+            <TypingIndicator typingUsers={Array.from(state.typingUsers.values())} />
+            <MessageInput onSend={handleSendMessage} onTyping={handleTyping} disabled={!state.connected} />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">
